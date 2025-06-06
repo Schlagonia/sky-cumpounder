@@ -44,6 +44,8 @@ contract SkyCumpounder is BaseHealthCheck {
     ///@notice yearn's referral code
     uint16 public referral = 1007;
 
+    address public voteDelegate;
+
     uint256 public minAmountToSell = 10e18;
 
     constructor(address _lockstakeEngine, address _usdsFarm)
@@ -53,10 +55,10 @@ contract SkyCumpounder is BaseHealthCheck {
         FARM = IStaking(_usdsFarm);
 
         // Approve SKY → LockstakeEngine for unlimited locking.
-        SKY.safeApprove(_lockstakeEngine, type(uint256).max);
+        SKY.forceApprove(_lockstakeEngine, type(uint256).max);
 
         // Approve USDS → UniswapV2 Router for unlimited swapping.
-        USDS.safeApprove(UNI_V2_ROUTER, type(uint256).max);
+        USDS.forceApprove(UNI_V2_ROUTER, type(uint256).max);
 
         // 1) Open URN #0 for this strategy address.
         URN = LOCK_STAKE_ENGINE.open(URN_INDEX);
@@ -95,7 +97,7 @@ contract SkyCumpounder is BaseHealthCheck {
         );
 
         uint256 usdsBal = USDS.balanceOf(address(this));
-        if (usdsBal > 0) {
+        if (usdsBal > minAmountToSell) {
             _uniV2swapFrom(address(USDS), address(SKY), usdsBal, 0);
         }
 
@@ -113,15 +115,13 @@ contract SkyCumpounder is BaseHealthCheck {
         uint256 _amountIn,
         uint256 _minAmountOut
     ) internal {
-        if (_amountIn > minAmountToSell) {
-            IUniswapV2Router(UNI_V2_ROUTER).swapExactTokensForTokens(
-                _amountIn,
-                _minAmountOut,
-                _getTokenOutPath(_from, _to),
-                address(this),
-                block.timestamp
-            );
-        }
+        IUniswapV2Router(UNI_V2_ROUTER).swapExactTokensForTokens(
+            _amountIn,
+            _minAmountOut,
+            _getTokenOutPath(_from, _to),
+            address(this),
+            block.timestamp
+        );
     }
 
     function _getTokenOutPath(address _tokenIn, address _tokenOut)
@@ -166,6 +166,16 @@ contract SkyCumpounder is BaseHealthCheck {
      */
     function setReferral(uint16 _referral) external onlyManagement {
         referral = _referral;
+    }
+
+    function setVoteDelegate(address _voteDelegate) external onlyManagement {
+        voteDelegate = _voteDelegate;
+
+        LOCK_STAKE_ENGINE.selectVoteDelegate(
+            address(this),
+            URN_INDEX,
+            voteDelegate
+        );
     }
 
     function _min(uint256 a, uint256 b) internal pure returns (uint256) {

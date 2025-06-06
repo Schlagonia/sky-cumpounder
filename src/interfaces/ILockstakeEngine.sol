@@ -20,6 +20,12 @@ interface ILockstakeEngine {
         uint16 ref
     ) external;
 
+    function selectVoteDelegate(
+        address owner,
+        uint256 index,
+        address voteDelegate
+    ) external;
+
     /// @notice Locks `wad` amount of SKY for the `owner`’s `index`­th URN, staking it to the previously‐selected farm.
     /// @param owner  The address owning the URN.
     /// @param index  The URN index.

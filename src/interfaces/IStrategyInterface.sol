@@ -28,5 +28,9 @@ interface IStrategyInterface is IBaseHealthCheck {
 
     function setReferral(uint16 _referral) external;
 
+    function setVoteDelegate(address _voteDelegate) external;
+
+    function voteDelegate() external view returns (address);
+
     function setMinAmountToSell(uint256 _minAmountToSell) external;
 }
