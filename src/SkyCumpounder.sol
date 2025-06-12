@@ -6,6 +6,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ILockstakeEngine} from "./interfaces/ILockstakeEngine.sol";
 import {IUniswapV2Router} from "./interfaces/IUniswapV2Router.sol";
 import {IStaking} from "./interfaces/IStaking.sol";
+import {Auction} from "@periphery/Auctions/Auction.sol";
 
 /// @title StrategySKYLockstake
 /// @notice A Yearn V3 TokenizedStrategy that:
@@ -48,6 +49,10 @@ contract SkyCumpounder is BaseHealthCheck {
 
     uint256 public minAmountToSell = 10e18;
 
+    address public auction;
+
+    bool public useAuction;
+
     constructor(address _lockstakeEngine, address _usdsFarm)
         BaseHealthCheck(address(SKY), "Sky Cumpounder")
     {
@@ -84,6 +89,8 @@ contract SkyCumpounder is BaseHealthCheck {
         LOCK_STAKE_ENGINE.free(address(this), URN_INDEX, address(this), assets);
     }
 
+    // NOTE: If useAuction is true, we will use the auction to sell the USDS rewards.
+    //  If useAuction is false, we will swap the USDS rewards to SKY through UniswapV2 and needs a private relay
     function _harvestAndReport()
         internal
         override
@@ -98,7 +105,11 @@ contract SkyCumpounder is BaseHealthCheck {
 
         uint256 usdsBal = USDS.balanceOf(address(this));
         if (usdsBal > minAmountToSell) {
-            _uniV2swapFrom(address(USDS), address(SKY), usdsBal, 0);
+            if (useAuction) {
+                _kick(usdsBal);
+            } else {
+                _uniV2swapFrom(address(USDS), address(SKY), usdsBal, 0);
+            }
         }
 
         uint256 newSky = SKY.balanceOf(address(this));
@@ -149,6 +160,27 @@ contract SkyCumpounder is BaseHealthCheck {
         return FARM.balanceOf(URN);
     }
 
+    function kick() external onlyKeepers {
+        require(useAuction, "!useAuction");
+
+        LOCK_STAKE_ENGINE.getReward(
+            address(this),
+            URN_INDEX,
+            address(FARM),
+            address(this)
+        );
+
+        uint256 usdsBal = USDS.balanceOf(address(this));
+        if (usdsBal > minAmountToSell) {
+            _kick(usdsBal);
+        }
+    }
+
+    function _kick(uint256 _amount) internal {
+        USDS.transfer(auction, _amount);
+        Auction(auction).kick(address(USDS));
+    }
+
     /**
      * @notice Set the minimum amount of rewardsToken to sell
      * @param _minAmountToSell minimum amount to sell in wei
@@ -158,6 +190,19 @@ contract SkyCumpounder is BaseHealthCheck {
         onlyManagement
     {
         minAmountToSell = _minAmountToSell;
+    }
+
+    function setAuction(address _auction) external onlyManagement {
+        if (_auction != address(0)) {
+            require(Auction(_auction).receiver() == address(this), "receiver");
+            require(Auction(_auction).want() == address(asset), "want");
+        }
+        auction = _auction;
+    }
+
+    function setUseAuction(bool _useAuction) external onlyManagement {
+        if (_useAuction) require(auction != address(0), "!auction");
+        useAuction = _useAuction;
     }
 
     /**
