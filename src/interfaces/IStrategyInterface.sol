@@ -22,6 +22,10 @@ interface IStrategyInterface is IBaseHealthCheck {
 
     function minAmountToSell() external view returns (uint256);
 
+    function openDeposits() external view returns (bool);
+
+    function allowed(address _depositor) external view returns (bool);
+
     function estimatedTotalAssets() external view returns (uint256);
 
     function balanceOfStake() external view returns (uint256);
@@ -33,4 +37,8 @@ interface IStrategyInterface is IBaseHealthCheck {
     function voteDelegate() external view returns (address);
 
     function setMinAmountToSell(uint256 _minAmountToSell) external;
+
+    function setOpenDeposits(bool _openDeposits) external;
+
+    function setAllowed(address _depositor, bool _allowed) external;
 }

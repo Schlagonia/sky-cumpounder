@@ -85,6 +85,8 @@ contract Setup is ExtendedTest, IEvents {
 
         _strategy.setMinAmountToSell(0);
 
+        _strategy.setOpenDeposits(true);
+
         vm.prank(management);
         _strategy.acceptManagement();
 

@@ -53,6 +53,10 @@ contract SkyCumpounder is BaseHealthCheck {
 
     bool public useAuction;
 
+    bool public openDeposits;
+
+    mapping(address => bool) public allowed;
+
     constructor(address _lockstakeEngine, address _usdsFarm)
         BaseHealthCheck(address(SKY), "Sky Cumpounder")
     {
@@ -118,6 +122,19 @@ contract SkyCumpounder is BaseHealthCheck {
         }
 
         _totalAssets = estimatedTotalAssets();
+    }
+
+    function availableDepositLimit(address _receiver)
+        public
+        view
+        override
+        returns (uint256)
+    {
+        if (openDeposits || allowed[_receiver]) {
+            return type(uint256).max;
+        }
+
+        return 0;
     }
 
     function _uniV2swapFrom(
@@ -190,6 +207,17 @@ contract SkyCumpounder is BaseHealthCheck {
         onlyManagement
     {
         minAmountToSell = _minAmountToSell;
+    }
+
+    function setOpenDeposits(bool _openDeposits) external onlyManagement {
+        openDeposits = _openDeposits;
+    }
+
+    function setAllowed(address _depositor, bool _allowed)
+        external
+        onlyManagement
+    {
+        allowed[_depositor] = _allowed;
     }
 
     function setAuction(address _auction) external onlyManagement {
