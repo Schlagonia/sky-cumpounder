@@ -14,4 +14,10 @@ interface IStaking {
     function getReward() external;
 
     function balanceOf(address _user) external view returns (uint256);
+
+    function periodFinish() external view returns (uint256);
+
+    function rewardRate() external view returns (uint256);
+
+    function totalSupply() external view returns (uint256);
 }

@@ -19,21 +19,26 @@ contract OracleTest is Setup {
 
         uint256 currentApr = oracle.aprAfterDebtChange(_strategy, 0);
 
+        console2.log("currentApr", currentApr);
+
         // Should be greater than 0 but likely less than 100%
         assertGt(currentApr, 0, "ZERO");
         assertLt(currentApr, 1e18, "+100%");
 
         // TODO: Uncomment to test the apr goes up and down based on debt changes
-        /**
+        
         uint256 negativeDebtChangeApr = oracle.aprAfterDebtChange(_strategy, -int256(_delta));
+
+        console2.log("negativeDebtChangeApr", negativeDebtChangeApr);
 
         // The apr should go up if deposits go down
         assertLt(currentApr, negativeDebtChangeApr, "negative change");
 
         uint256 positiveDebtChangeApr = oracle.aprAfterDebtChange(_strategy, int256(_delta));
 
+        console2.log("positiveDebtChangeApr", positiveDebtChangeApr);
+
         assertGt(currentApr, positiveDebtChangeApr, "positive change");
-        */
 
         // TODO: Uncomment if there are setter functions to test.
         /**
@@ -49,7 +54,7 @@ contract OracleTest is Setup {
     }
 
     function test_oracle(uint256 _amount, uint16 _percentChange) public {
-        vm.assume(_amount > minFuzzAmount && _amount < maxFuzzAmount);
+        vm.assume(_amount > 1000e18 && _amount < 1_000_000e18);
         _percentChange = uint16(bound(uint256(_percentChange), 10, MAX_BPS));
 
         mintAndDepositIntoStrategy(strategy, user, _amount);

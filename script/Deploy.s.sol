@@ -5,6 +5,7 @@ import {Script} from "forge-std/Script.sol";
 import {SkyCumpounder} from "../src/SkyCumpounder.sol";
 import {console} from "forge-std/console.sol";
 import {IStrategyInterface} from "../src/interfaces/IStrategyInterface.sol";
+import {StrategyAprOracle} from "../src/periphery/StrategyAprOracle.sol";
 
 contract Deploy is Script {
 
@@ -16,6 +17,10 @@ contract Deploy is Script {
     address public sms = 0x16388463d60FFE0661Cf7F1f31a7D658aC790ff7;
 
     function run() public {
+
+        deployOracle();
+        return;
+        
         vm.startBroadcast();
 
         SkyCumpounder skyCumpounder = new SkyCumpounder(
@@ -32,6 +37,17 @@ contract Deploy is Script {
         strategy.setEmergencyAdmin(sms);
         strategy.setPerformanceFee(0);
         strategy.setPendingManagement(sms);
+
+        vm.stopBroadcast();
+    }
+
+
+    function deployOracle() public {
+        vm.startBroadcast();
+
+        StrategyAprOracle oracle = new StrategyAprOracle();
+
+        console.log("StrategyAprOracle deployed to:", address(oracle));
 
         vm.stopBroadcast();
     }
